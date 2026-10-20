@@ -104,7 +104,7 @@ dsh --profile <name> --dump-config | grep -A6 'mcp-proxy'
 - `searchLimit` 数字输入，1–50；
 - `descriptionMaxChars` 数字输入，1–2000。
 
-保存后写入 profile 的配置层。四个字段都是 volatile，Loader 会原地更新运行中的配置，不需要重启 DSH；`enabled` 切换时会立即移除或恢复已存在 Agent 上的代理工具、guard 和提示段。
+首次加载后，后续保存配置不需要重启 DSH；四个字段都是 volatile，Loader 会原地更新运行中的配置。`enabled` 切换时会立即移除或恢复已存在 Agent 上的代理工具、guard 和提示段。
 
 ## 关键实现
 
