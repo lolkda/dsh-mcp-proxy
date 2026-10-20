@@ -92,12 +92,12 @@ dsh --profile <name> --dump-config | grep -A6 'mcp-proxy'
 安装后打开：
 
 ```text
-设置 → 内置插件 → MCP 代理
+设置 → MCP 代理
 ```
 
 首次安装或更新 client bundle 后，需要重启一次 DSH Web；仅刷新页面不会重新扫描 `dsh.client` 声明。
 
-设置页使用 DSH 原生的 `SettingsForm`、`SettingsValueField` 和 `Switch`，提供：
+页面出现在左侧设置导航中，与“请求重试”“首轮只思考”等入口并列，使用 DSH 原生的 `SettingsForm`、`SettingsValueField` 和 `Switch`，提供：
 
 - `enabled` 开关；
 - `prefix` 文本；

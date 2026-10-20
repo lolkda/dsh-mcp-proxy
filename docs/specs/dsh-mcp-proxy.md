@@ -100,13 +100,13 @@ MCP 工具在 DSH 原生模式中以 `mcp__<server>__<tool>` 直接进入模型 
 
 - 参与者或触发方：DSH profile loader 与 Web client loader。
 - 前置条件与输入：profile 通过 `dsh plugin add` 引入本包。
-- 必须满足的行为：`dsh.bundle.patch` 指向 `cordis.patch.yml`，顶层插入 `mcp-proxy` 行；`dsh.client` 指向 `./client`，在 Web 设置的 `settings.plugins.tab` 槽注册配置页。
+- 必须满足的行为：`dsh.bundle.patch` 指向 `cordis.patch.yml`，顶层插入 `mcp-proxy` 行；`dsh.client` 指向 `./client`，在 Web 设置的 `settings.section` 槽注册独立入口。
 - 输出或状态变化：`--dump-config` 中出现唯一 `mcp-proxy` 行；Web 设置页出现“MCP 代理”入口。
 - 边界与失败行为：client 不可用时 host 行为不变，只是没有可视化配置页。
 
 ### R-009：Web 可视化配置
 
-- 参与者或触发方：Web 设置 → 内置插件 → MCP 代理。
+- 参与者或触发方：Web 设置 → MCP 代理。
 - 前置条件与输入：Host 暴露 `mcp-proxy` 的 `Config` schema，client 注入 `configForms`、`locale`、`slots`。
 - 必须满足的行为：配置页使用 DSH 原生 `SettingsForm`、`SettingsValueField` 和 `Switch`；编辑 `enabled`、`prefix`、`searchLimit`、`descriptionMaxChars`；保存后才写入。
 - 输出或状态变化：四个字段均为 volatile；保存后原地更新运行配置。`enabled` 关闭时移除已有 Agent 的代理能力，重新开启时恢复已存在 Agent。
@@ -294,7 +294,7 @@ MCP 工具在 DSH 原生模式中以 `mcp__<server>__<tool>` 直接进入模型 
 | `lib/index.js` | 插件入口、`Config` schema、按 Agent 激活、装配过滤、guard、提示段、生命周期、volatile 配置刷新 |
 | `lib/catalog.js` | 读取 MCP schema、列表、搜索、describe、名称和描述处理 |
 | `lib/call.js` | `mcp_call` 的嵌套 registry 调用、错误映射、内容投影 |
-| `lib/client.js` | Web 设置页：`settings.plugins.tab`、四个字段、DSH 原生表单组件 |
+| `lib/client.js` | Web 设置页：`settings.section`、四个字段、DSH 原生表单组件 |
 | `cordis.patch.yml` | 顶层 profile 插入行与默认配置 |
 
 ### 8.2 激活数据流

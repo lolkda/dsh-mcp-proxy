@@ -99,7 +99,7 @@ async function loadClient() {
   const ctx = {
     slots: {
       inject(name, callback) {
-        assert.equal(name, 'settings.plugins.tab')
+        assert.equal(name, 'settings.section')
         return callback()
       },
       register(options, component) {
@@ -150,9 +150,9 @@ test('client registers one MCP proxy page over the four settings', async () => {
   assert.equal(dictionaries.namespace, 'settings.mcp-proxy')
   assert.ok(dictionaries.value.zh)
   assert.ok(dictionaries.value.en)
-  assert.equal(slot.options.name, 'settings.plugins.tab')
+  assert.equal(slot.options.name, 'settings.section')
   assert.equal(slot.options.id, 'mcp-proxy')
-  assert.equal(slot.options.order, 20)
+  assert.equal(slot.options.order, 13)
   assert.equal(slot.options.label(), 'MCP 代理')
   assert.equal(slot.options.locale, 'settings.mcp-proxy')
 
@@ -162,8 +162,6 @@ test('client registers one MCP proxy page over the four settings', async () => {
   assert.equal(typeof injected.resetField, 'function')
   assert.equal(typeof injected.save, 'function')
   assert.equal(typeof injected.discard, 'function')
-
-  assert.equal(slot.component({ view: 'summary', t: key => key === 'description' ? 'summary text' : key }), 'summary text')
 
   const actions = {
     edit() {},
@@ -184,10 +182,14 @@ test('client registers one MCP proxy page over the four settings', async () => {
     ...actions,
   })
 
-  assert.equal(tree.type, 'SettingsForm')
-  assert.equal(tree.props.children.length, 4)
-  assert.equal(tree.props.children[0].type, 'div')
-  assert.deepEqual(tree.props.children.slice(1).map(child => child.type), [
+  assert.equal(tree.type, 'section')
+  assert.equal(tree.props.children[0].type, 'h2')
+  assert.equal(tree.props.children[1].type, 'p')
+  const form = tree.props.children[2]
+  assert.equal(form.type, 'SettingsForm')
+  assert.equal(form.props.children.length, 4)
+  assert.equal(form.props.children[0].type, 'div')
+  assert.deepEqual(form.props.children.slice(1).map(child => child.type), [
     'SettingsValueField',
     'SettingsValueField',
     'SettingsValueField',
