@@ -1,6 +1,6 @@
 {
   "name": "@lolkda/dsh-mcp-proxy",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "DSH native-mode MCP proxy: hide mcp__ tools from the model tool list, expose list/search/describe/call discovery tools, and execute MCP tools through a guarded nested call.",
   "type": "module",
   "repository": {
