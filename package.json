@@ -1,9 +1,16 @@
 {
   "name": "@lolkda/dsh-mcp-proxy",
   "version": "0.1.0",
-  "private": true,
   "description": "DSH native-mode MCP proxy: hide mcp__ tools from the model tool list, expose list/search/describe/call discovery tools, and execute MCP tools through a guarded nested call.",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lolkda/dsh-mcp-proxy.git"
+  },
+  "bugs": {
+    "url": "https://github.com/lolkda/dsh-mcp-proxy/issues"
+  },
+  "homepage": "https://github.com/lolkda/dsh-mcp-proxy#readme",
   "engines": {
     "node": ">=22"
   },
@@ -35,6 +42,9 @@
   ],
   "author": "lolkda",
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"

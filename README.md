@@ -76,7 +76,7 @@ dsh plugin --profile <name> add /app/project/dsh-run-code
 dsh --profile <name> --dump-config | grep -A6 'mcp-proxy'
 ```
 
-本包当前为 `private: true` 的本地 v0.1.0。准备发布时再移除该字段。
+本包通过 GitHub Actions 与 npm OIDC trusted publishing 发布；首次发布、npm 端 trusted publisher 配置和发版流程见 [docs/releasing.md](docs/releasing.md)。
 
 ## 配置
 
@@ -126,6 +126,19 @@ npm run check
 ```bash
 DSH_INSTALL_ROOT=/path/to/dsh npm run test:composition
 ```
+
+## 发布
+
+发布由 [.github/workflows/ci.yml](.github/workflows/ci.yml) 的 `publish` job 完成，使用 GitHub Actions OIDC，不需要 `NPM_TOKEN`。
+
+发版前需要先在 npm 包设置中配置 trusted publisher：
+
+- GitHub 用户/组织：`lolkda`
+- 仓库：`dsh-mcp-proxy`
+- 工作流文件名：`ci.yml`
+- Allowed actions：`npm publish`
+
+首次发布、bootstrap 步骤和 tag 流程见 [docs/releasing.md](docs/releasing.md)。
 
 ## 已知限制
 
