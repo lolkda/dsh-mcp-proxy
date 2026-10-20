@@ -98,11 +98,19 @@ MCP 工具在 DSH 原生模式中以 `mcp__<server>__<tool>` 直接进入模型 
 
 ### R-008：包形态
 
-- 参与者或触发方：DSH profile loader。
+- 参与者或触发方：DSH profile loader 与 Web client loader。
 - 前置条件与输入：profile 通过 `dsh plugin add` 引入本包。
-- 必须满足的行为：`dsh.bundle.patch` 指向 `cordis.patch.yml`，顶层插入 `mcp-proxy` 行。
-- 输出或状态变化：`--dump-config` 中出现唯一 `mcp-proxy` 行。
-- 边界与失败行为：无 client bundle，不依赖设置页。
+- 必须满足的行为：`dsh.bundle.patch` 指向 `cordis.patch.yml`，顶层插入 `mcp-proxy` 行；`dsh.client` 指向 `./client`，在 Web 设置的 `plugins.item` 槽注册配置卡片。
+- 输出或状态变化：`--dump-config` 中出现唯一 `mcp-proxy` 行；Web 设置页出现“MCP 代理”入口。
+- 边界与失败行为：client 不可用时 host 行为不变，只是没有可视化配置页。
+
+### R-009：Web 可视化配置
+
+- 参与者或触发方：Web 设置 → 内置插件 → MCP 代理。
+- 前置条件与输入：Host 暴露 `mcp-proxy` 的 `Config` schema，client 注入 `configForms`、`locale`、`slots`。
+- 必须满足的行为：配置卡片使用 DSH 原生 `SettingsForm`、`SettingsValueField` 和 `Switch`；编辑 `enabled`、`prefix`、`searchLimit`、`descriptionMaxChars`；保存后才写入。
+- 输出或状态变化：四个字段均为 volatile；保存后原地更新运行配置。`enabled` 关闭时移除已有 Agent 的代理能力，重新开启时恢复已存在 Agent。
+- 边界与失败行为：设置不可写时表单只读；Host 不服务 namespace 时不显示入口；保存失败保留草稿。
 
 ### 相关约束
 
@@ -110,6 +118,7 @@ MCP 工具在 DSH 原生模式中以 `mcp__<server>__<tool>` 直接进入模型 
 - MCP resource 工具保持可见。
 - v1 不处理图片专用投影。
 - 隐藏是请求投影，不是权限控制。
+- Web 配置页只编辑本插件的四个配置字段，不代理 MCP resources。
 
 ## 5. 关键决定
 
@@ -237,9 +246,9 @@ MCP 工具在 DSH 原生模式中以 `mcp__<server>__<tool>` 直接进入模型 
 - 对应规则：R-008
 - 前置条件：临时 `DSH_HOME`。
 - 操作或输入：`dsh plugin --profile verify add /app/project/dsh-run-code`，再执行 `--dump-config`。
-- 预期结果：出现唯一 `mcp-proxy` 行；未修改 `web` profile。
+- 预期结果：出现唯一 `mcp-proxy` 行；临时 profile 可独立启动。
 - 验证状态：通过
-- 验证证据：`/tmp/dsh-mcp-proxy-home/profiles/verify`；`web` profile 文件 mtime 未变化。
+- 验证证据：`/tmp/dsh-mcp-proxy-home/profiles/verify`；当前 `web` profile 的安装状态不在该隔离测试断言范围内。
 
 ### AC-008：生命周期释放
 
@@ -282,9 +291,10 @@ MCP 工具在 DSH 原生模式中以 `mcp__<server>__<tool>` 直接进入模型 
 
 | 模块 | 职责 |
 |---|---|
-| `lib/index.js` | 插件入口、按 Agent 激活、装配过滤、guard、提示段、生命周期 |
+| `lib/index.js` | 插件入口、`Config` schema、按 Agent 激活、装配过滤、guard、提示段、生命周期、volatile 配置刷新 |
 | `lib/catalog.js` | 读取 MCP schema、列表、搜索、describe、名称和描述处理 |
 | `lib/call.js` | `mcp_call` 的嵌套 registry 调用、错误映射、内容投影 |
+| `lib/client.js` | Web 设置卡片：`plugins.item`、四个字段、DSH 原生表单组件 |
 | `cordis.patch.yml` | 顶层 profile 插入行与默认配置 |
 
 ### 8.2 激活数据流
@@ -323,6 +333,18 @@ providers + proxy section
 | `mcp_call.name` | string | 必填 | 否 | 无 | 必须以 `mcp__` 开头 |
 | `mcp_call.arguments` | object | 可选 | 否 | `{}` | 传给 MCP 工具的参数 |
 
+### 8.4.1 Web 配置契约
+
+| 字段 | 类型 | 默认 | 约束 | 生效方式 |
+|---|---|---|---|---|
+| `enabled` | boolean | `true` | 仅 `false` 关闭 | 立即移除或恢复已有 Agent 的代理能力 |
+| `prefix` | string | `mcp__` | 非空 | 下一次隐藏、装配过滤和 guard 读取时生效 |
+| `searchLimit` | integer | `10` | 1–50 | 下一次 `mcp_search` 使用 |
+| `descriptionMaxChars` | integer | `200` | 1–2000 | 下一次 `mcp_list` / `mcp_search` 使用 |
+
+四个字段均为 `Schema.*.volatile()`，由 DSH `SettingsForm` 暂存、保存时一次性提交；
+插件监听 `loader/volatile-update` 原地刷新，不依赖 Agent 重建。
+
 ### 8.5 错误行为
 
 - 直接 `mcp__*`：guard 返回固定拒绝文案。
@@ -333,10 +355,10 @@ providers + proxy section
 
 ### 8.6 验证
 
-- 单元：14 项，覆盖 catalog、配置、激活/跳过、装配、guard、发现、调用、销毁、首轮清空共存。
+- 单元：18 项，覆盖 catalog、`Config` schema、Web 配置客户端、激活/跳过、装配、guard、发现、调用、销毁、volatile 配置切换、首轮清空共存。
 - 组合：3 项，覆盖真实 Cordis/services、真实 registry、真实 `dsh-mcp-client` + stdio fake server、codemode 跳过。
 - 隔离 profile：`/tmp/dsh-mcp-proxy-home/profiles/verify`。
-- 不修改 `/app/.dsh/profiles/web`。
+- 组合测试使用临时 `DSH_HOME`；当前 `web` profile 通过 bundle 安装，状态不在测试断言范围内。
 
 ### 8.7 已知限制
 

@@ -85,15 +85,33 @@ dsh --profile <name> --dump-config | grep -A6 'mcp-proxy'
 | `enabled` | `true` | 关闭后不注册、不拦截 |
 | `prefix` | `mcp__` | MCP 工具名前缀，同时用于识别和隐藏 |
 | `searchLimit` | `10` | `mcp_search` 默认条数，最大 50 |
-| `descriptionMaxChars` | `200` | 列表中的描述截断长度 |
+| `descriptionMaxChars` | `200` | 列表中的描述截断长度，最大 2000 |
+
+## Web 可视化配置
+
+安装后打开：
+
+```text
+设置 → 内置插件 → MCP 代理
+```
+
+设置页使用 DSH 原生的 `SettingsForm`、`SettingsValueField` 和 `Switch`，提供：
+
+- `enabled` 开关；
+- `prefix` 文本；
+- `searchLimit` 数字输入，1–50；
+- `descriptionMaxChars` 数字输入，1–2000。
+
+保存后写入 profile 的配置层。四个字段都是 volatile，Loader 会原地更新运行中的配置，不需要重启 DSH；`enabled` 切换时会立即移除或恢复已存在 Agent 上的代理工具、guard 和提示段。
 
 ## 关键实现
 
 - `agent/created` 时在 `agent.ctx` 上安装四项能力：四个工具、一个 guard、一个 `system-prompt/assemble` 监听、一个动态提示段。
 - `agent.ctx.inject(['tools', 'systemPrompt'], ...)` 取得 agent 作用域的服务；注册落在该 Agent 的层，不会变成全局工具。
-- guard 规则是 `name.startsWith('mcp__') && exec.parent === undefined`。`mcp_call` 通过 `tools.execute({ parent: exec.token })` 发起嵌套调用，所以能通过同一个 guard。
+- guard 规则是 `name.startsWith(options.prefix) && exec.parent === undefined`。`mcp_call` 通过 `tools.execute({ parent: exec.token })` 发起嵌套调用，所以能通过同一个 guard。
 - 装配监听使用 `prepend: true` 并在 `await next()` 之后过滤，保证最终投影由它收口。
 - 提示段是动态的：有 MCP 时非空，没有 MCP 时为空，并且会被装配过滤移除。
+- 配置字段是 volatile；插件监听 `loader/volatile-update`，原地更新 `enabled`、`prefix`、`searchLimit` 和 `descriptionMaxChars`。
 - 没有持久化、加载集合、journal 或 compaction hook。压缩后模型重新 `mcp_list` / `mcp_search` 即可。
 
 ### 与首轮零工具插件共存

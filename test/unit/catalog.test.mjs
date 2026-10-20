@@ -9,7 +9,7 @@ import {
   serverOf,
   truncateDescription,
 } from '../../lib/catalog.js'
-import { normalizeConfig } from '../../lib/index.js'
+import { normalizeConfig, Config } from '../../lib/index.js'
 
 const options = {
   prefix: 'mcp__',
@@ -79,4 +79,21 @@ test('config normalization clamps values and preserves a custom prefix', () => {
   assert.equal(config.searchLimit, 50)
   assert.equal(config.descriptionMaxChars, 200)
   assert.equal(config.enabled, false)
+})
+
+test('the loader Config schema exposes and validates the four settings', () => {
+  const loaded = Config({})
+  assert.equal(loaded.enabled.get(), true)
+  assert.equal(loaded.prefix.get(), 'mcp__')
+  assert.equal(loaded.searchLimit.get(), 10)
+  assert.equal(loaded.descriptionMaxChars.get(), 200)
+  assert.deepEqual(normalizeConfig(loaded), {
+    enabled: true,
+    prefix: 'mcp__',
+    searchLimit: 10,
+    descriptionMaxChars: 200,
+  })
+  assert.throws(() => Config({ searchLimit: 51 }))
+  assert.throws(() => Config({ descriptionMaxChars: 0 }))
+  assert.throws(() => Config({ prefix: '' }))
 })
