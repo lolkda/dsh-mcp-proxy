@@ -32,6 +32,9 @@ npm publish --access public --registry=https://registry.npmjs.org
 
 如果使用一次性 granular access token，发布完成后应立即吊销该 token。
 
+bootstrap 发布后，`0.1.0` 已经存在于 registry，不能被重复发布。第一次 OIDC
+发布请先把版本提升到 `0.1.1`，再按下面的正常发版流程推送 `v0.1.1`。
+
 ## 配置 trusted publisher
 
 在 npmjs.com 打开包设置：
