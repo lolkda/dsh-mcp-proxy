@@ -7,6 +7,8 @@
 
 - npm 包必须已经存在。npm 的 trusted publisher 只能在已有包上配置；
   当前包尚未发布时，需要先完成一次 bootstrap publish。
+- npm 账号必须拥有 `@lolkda` scope 的发布权限；可以用
+  `npm whoami --registry=https://registry.npmjs.org` 确认登录身份。
 - GitHub 仓库必须公开，且 `package.json` 的 `repository.url` 必须与仓库一致：
 
   ```json
