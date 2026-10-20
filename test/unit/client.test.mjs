@@ -99,7 +99,7 @@ async function loadClient() {
   const ctx = {
     slots: {
       inject(name, callback) {
-        assert.equal(name, 'plugins.item')
+        assert.equal(name, 'settings.plugins.tab')
         return callback()
       },
       register(options, component) {
@@ -137,7 +137,7 @@ async function loadClient() {
   return { exports: exportsObject, model: capturedModel, slot, effects, dictionaries }
 }
 
-test('client registers one MCP proxy card over the four settings', async () => {
+test('client registers one MCP proxy page over the four settings', async () => {
   const { exports, model, slot, effects, dictionaries } = await loadClient()
 
   assert.deepEqual(exports.inject, ['slots', 'locale', 'configForms'])
@@ -150,9 +150,9 @@ test('client registers one MCP proxy card over the four settings', async () => {
   assert.equal(dictionaries.namespace, 'settings.mcp-proxy')
   assert.ok(dictionaries.value.zh)
   assert.ok(dictionaries.value.en)
-  assert.equal(slot.options.name, 'plugins.item')
+  assert.equal(slot.options.name, 'settings.plugins.tab')
   assert.equal(slot.options.id, 'mcp-proxy')
-  assert.equal(slot.options.order, 45)
+  assert.equal(slot.options.order, 20)
   assert.equal(slot.options.label(), 'MCP 代理')
   assert.equal(slot.options.locale, 'settings.mcp-proxy')
 
@@ -192,5 +192,5 @@ test('client registers one MCP proxy card over the four settings', async () => {
     'SettingsValueField',
     'SettingsValueField',
   ])
-  assert.ok(effects.some(entry => entry.label === 'mcp-proxy: settings card'))
+  assert.ok(effects.some(entry => entry.label === 'mcp-proxy: settings page'))
 })
