@@ -1,0 +1,9 @@
+# Top-level profile entry: the proxy is global, but it only activates on
+# native agents and skips presets that already own a disclosure mechanism.
+- insert:
+    - id: mcp-proxy
+      name: '@lolkda/dsh-mcp-proxy'
+      config:
+        prefix: 'mcp__'
+        searchLimit: 10
+        descriptionMaxChars: 200

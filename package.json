@@ -1,0 +1,43 @@
+{
+  "name": "@lolkda/dsh-mcp-proxy",
+  "version": "0.1.0",
+  "private": true,
+  "description": "DSH native-mode MCP proxy: hide mcp__ tools from the model tool list, expose list/search/describe/call discovery tools, and execute MCP tools through a guarded nested call.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "exports": {
+    ".": "./lib/index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE",
+    "docs"
+  ],
+  "scripts": {
+    "test": "node --test test/unit/*.test.mjs",
+    "test:composition": "node --test test/composition/*.test.mjs",
+    "test:all": "npm test && npm run test:composition",
+    "check": "node --check lib/*.js && npm test"
+  },
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "cordis",
+    "cordis-plugin",
+    "mcp",
+    "mcp-proxy",
+    "tool-discovery"
+  ],
+  "author": "lolkda",
+  "license": "MIT",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}
