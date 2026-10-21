@@ -97,7 +97,7 @@ dsh --profile <name> --dump-config | grep -A6 'mcp-proxy'
 
 首次安装或更新 client bundle 后，需要重启一次 DSH Web；仅刷新页面不会重新扫描 `dsh.client` 声明。
 
-页面出现在左侧设置导航中，与“请求重试”“首轮只思考”等入口并列，使用 DSH 原生的 `SettingsForm`、`SettingsValueField` 和 `Switch`，提供：
+页面出现在左侧设置导航中，使用 DSH 原生的 `SettingsForm`、`SettingsValueField` 和 `Switch`，提供：
 
 - `enabled` 开关；
 - `prefix` 文本；
@@ -115,14 +115,6 @@ dsh --profile <name> --dump-config | grep -A6 'mcp-proxy'
 - 提示段是动态的：有 MCP 时非空，没有 MCP 时为空，并且会被装配过滤移除。
 - 配置字段是 volatile；插件监听 `loader/volatile-update`，原地更新 `enabled`、`prefix`、`searchLimit` 和 `descriptionMaxChars`。
 - 没有持久化、加载集合、journal 或 compaction hook。压缩后模型重新 `mcp_list` / `mcp_search` 即可。
-
-### 与首轮零工具插件共存
-
-`bare-first-turn` 在首轮清空 tools 和 sections。代理插件不依赖它，也不会在清空后重新加回内容：
-
-- 首轮：`bare-first-turn` 清空所有内容，代理工具和提示段同样不可见；
-- 首轮之后：代理工具和提示段随正常装配出现；
-- 无需修改 `bare-first-turn` 的现有装配顺序。
 
 ## 安全边界
 
