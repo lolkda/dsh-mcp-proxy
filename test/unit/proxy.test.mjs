@@ -323,39 +323,15 @@ test('agent disposal removes tools, guards and sections', () => {
   assert.equal(harness.sections.length, 0)
 })
 
-test('volatile settings can disable and re-enable the proxy in place', () => {
-  const config = {
-    enabled: true,
-    prefix: 'mcp__',
-    searchLimit: 10,
-    descriptionMaxChars: 200,
-  }
+test('a legacy enabled field no longer disables the proxy', () => {
   const harness = createHarness([mcpEcho()])
-  apply(harness.top, config)
+  apply(harness.top, { enabled: false })
   harness.emit('agent/created', { agent: harness.agent })
   assert.equal(harness.tools.registered.size, 4)
-
-  config.enabled = false
-  harness.emit('loader/volatile-update', [])
-  assert.equal(harness.tools.registered.size, 0)
-  assert.equal(harness.tools.guards.length, 0)
-  assert.equal(harness.sections.length, 0)
-
-  config.enabled = true
-  harness.emit('loader/volatile-update', [])
-  assert.deepEqual([...harness.tools.registered.keys()].sort(), [
-    'mcp_call',
-    'mcp_describe',
-    'mcp_list',
-    'mcp_search',
-  ])
-  assert.equal(harness.tools.guards.length, 1)
-  assert.equal(harness.sections.length, 1)
 })
 
-test('a disabled mount can be enabled from its setting', () => {
+test('volatile settings update existing agents in place', () => {
   const config = {
-    enabled: false,
     prefix: 'mcp__',
     searchLimit: 10,
     descriptionMaxChars: 200,
@@ -363,11 +339,16 @@ test('a disabled mount can be enabled from its setting', () => {
   const harness = createHarness([mcpEcho()])
   apply(harness.top, config)
   harness.emit('agent/created', { agent: harness.agent })
-  assert.equal(harness.tools.registered.size, 0)
+  const guard = harness.tools.guards[0]
 
-  config.enabled = true
+  assert.match(String(guard({ name: 'mcp__alpha__echo', agent: harness.agent })), /hidden/)
+
+  config.prefix = 'tool__'
   harness.emit('loader/volatile-update', [])
+
   assert.equal(harness.tools.registered.size, 4)
+  assert.equal(guard({ name: 'mcp__alpha__echo', agent: harness.agent }), undefined)
+  assert.match(String(guard({ name: 'tool__x', agent: harness.agent })), /hidden/)
 })
 
 test('a first-turn clearing hook wins and the proxy does not re-add its section', async () => {

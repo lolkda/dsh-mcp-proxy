@@ -80,9 +80,10 @@ dsh --profile <name> --dump-config | grep -A6 'mcp-proxy'
 
 ## 配置
 
+插件是否启用由 DSH 插件管理器控制；本插件不额外提供 `enabled` 开关。旧配置里的 `enabled` 会被忽略。
+
 | 字段 | 默认 | 说明 |
 |---|---|---|
-| `enabled` | `true` | 关闭后不注册、不拦截 |
 | `prefix` | `mcp__` | MCP 工具名前缀，同时用于识别和隐藏 |
 | `searchLimit` | `10` | `mcp_search` 默认条数，最大 50 |
 | `descriptionMaxChars` | `200` | 列表中的描述截断长度，最大 2000 |
@@ -97,14 +98,13 @@ dsh --profile <name> --dump-config | grep -A6 'mcp-proxy'
 
 首次安装或更新 client bundle 后，需要重启一次 DSH Web；仅刷新页面不会重新扫描 `dsh.client` 声明。
 
-页面出现在左侧设置导航中，使用 DSH 原生的 `SettingsForm`、`SettingsValueField` 和 `Switch`，提供：
+页面出现在左侧设置导航中，使用 DSH 原生的 `SettingsForm` 和 `SettingsValueField`，提供：
 
-- `enabled` 开关；
 - `prefix` 文本；
 - `searchLimit` 数字输入，1–50；
 - `descriptionMaxChars` 数字输入，1–2000。
 
-首次加载后，后续保存配置不需要重启 DSH；四个字段都是 volatile，Loader 会原地更新运行中的配置。`enabled` 切换时会立即移除或恢复已存在 Agent 上的代理工具、guard 和提示段。
+首次加载后，后续保存配置不需要重启 DSH；三个字段都是 volatile，Loader 会原地更新运行中的配置。
 
 ## 关键实现
 
@@ -113,7 +113,7 @@ dsh --profile <name> --dump-config | grep -A6 'mcp-proxy'
 - guard 规则是 `name.startsWith(options.prefix) && exec.parent === undefined`。`mcp_call` 通过 `tools.execute({ parent: exec.token })` 发起嵌套调用，所以能通过同一个 guard。
 - 装配监听使用 `prepend: true` 并在 `await next()` 之后过滤，保证最终投影由它收口。
 - 提示段是动态的：有 MCP 时非空，没有 MCP 时为空，并且会被装配过滤移除。
-- 配置字段是 volatile；插件监听 `loader/volatile-update`，原地更新 `enabled`、`prefix`、`searchLimit` 和 `descriptionMaxChars`。
+- 配置字段是 volatile；插件监听 `loader/volatile-update`，原地更新 `prefix`、`searchLimit` 和 `descriptionMaxChars`。
 - 没有持久化、加载集合、journal 或 compaction hook。压缩后模型重新 `mcp_list` / `mcp_search` 即可。
 
 ## 安全边界

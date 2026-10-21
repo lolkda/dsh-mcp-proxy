@@ -108,8 +108,8 @@ MCP 工具在 DSH 原生模式中以 `mcp__<server>__<tool>` 直接进入模型 
 
 - 参与者或触发方：Web 设置 → MCP 代理。
 - 前置条件与输入：Host 暴露 `mcp-proxy` 的 `Config` schema，client 注入 `configForms`、`locale`、`slots`。
-- 必须满足的行为：配置页使用 DSH 原生 `SettingsForm`、`SettingsValueField` 和 `Switch`；编辑 `enabled`、`prefix`、`searchLimit`、`descriptionMaxChars`；保存后才写入。
-- 输出或状态变化：四个字段均为 volatile；保存后原地更新运行配置。`enabled` 关闭时移除已有 Agent 的代理能力，重新开启时恢复已存在 Agent。
+- 必须满足的行为：配置页使用 DSH 原生 `SettingsForm` 和 `SettingsValueField`；编辑 `prefix`、`searchLimit`、`descriptionMaxChars`；保存后才写入。
+- 输出或状态变化：三个字段均为 volatile；保存后原地更新运行配置。
 - 边界与失败行为：设置不可写时表单只读；Host 不服务 namespace 时不显示入口；保存失败保留草稿。
 
 ### 相关约束
@@ -118,7 +118,7 @@ MCP 工具在 DSH 原生模式中以 `mcp__<server>__<tool>` 直接进入模型 
 - MCP resource 工具保持可见。
 - v1 不处理图片专用投影。
 - 隐藏是请求投影，不是权限控制。
-- Web 配置页只编辑本插件的四个配置字段，不代理 MCP resources。
+- Web 配置页只编辑本插件的三个配置字段，不代理 MCP resources。
 
 ## 5. 关键决定
 
@@ -294,7 +294,7 @@ MCP 工具在 DSH 原生模式中以 `mcp__<server>__<tool>` 直接进入模型 
 | `lib/index.js` | 插件入口、`Config` schema、按 Agent 激活、装配过滤、guard、提示段、生命周期、volatile 配置刷新 |
 | `lib/catalog.js` | 读取 MCP schema、列表、搜索、describe、名称和描述处理 |
 | `lib/call.js` | `mcp_call` 的嵌套 registry 调用、错误映射、内容投影 |
-| `lib/client.js` | Web 设置页：`settings.section`、四个字段、DSH 原生表单组件 |
+| `lib/client.js` | Web 设置页：`settings.section`、三个字段、DSH 原生表单组件 |
 | `cordis.patch.yml` | 顶层 profile 插入行与默认配置 |
 
 ### 8.2 激活数据流
@@ -337,12 +337,13 @@ providers + proxy section
 
 | 字段 | 类型 | 默认 | 约束 | 生效方式 |
 |---|---|---|---|---|
-| `enabled` | boolean | `true` | 仅 `false` 关闭 | 立即移除或恢复已有 Agent 的代理能力 |
 | `prefix` | string | `mcp__` | 非空 | 下一次隐藏、装配过滤和 guard 读取时生效 |
 | `searchLimit` | integer | `10` | 1–50 | 下一次 `mcp_search` 使用 |
 | `descriptionMaxChars` | integer | `200` | 1–2000 | 下一次 `mcp_list` / `mcp_search` 使用 |
 
-四个字段均为 `Schema.*.volatile()`，由 DSH `SettingsForm` 暂存、保存时一次性提交；
+插件启用/停用由 DSH 插件管理器负责，配置页不提供 `enabled` 开关。
+
+三个字段均为 `Schema.*.volatile()`，由 DSH `SettingsForm` 暂存、保存时一次性提交；
 插件监听 `loader/volatile-update` 原地刷新，不依赖 Agent 重建。
 
 ### 8.5 错误行为

@@ -73,22 +73,19 @@ test('config normalization clamps values and preserves a custom prefix', () => {
     prefix: 'tool__',
     searchLimit: 999,
     descriptionMaxChars: 0,
-    enabled: false,
   })
   assert.equal(config.prefix, 'tool__')
   assert.equal(config.searchLimit, 50)
   assert.equal(config.descriptionMaxChars, 200)
-  assert.equal(config.enabled, false)
+  assert.equal('enabled' in config, false)
 })
 
-test('the loader Config schema exposes and validates the four settings', () => {
+test('the loader Config schema exposes and validates the three settings', () => {
   const loaded = Config({})
-  assert.equal(loaded.enabled.get(), true)
   assert.equal(loaded.prefix.get(), 'mcp__')
   assert.equal(loaded.searchLimit.get(), 10)
   assert.equal(loaded.descriptionMaxChars.get(), 200)
   assert.deepEqual(normalizeConfig(loaded), {
-    enabled: true,
     prefix: 'mcp__',
     searchLimit: 10,
     descriptionMaxChars: 200,

@@ -52,9 +52,8 @@ async function loadClient() {
 
     field(name) {
       return {
-        text: name === 'enabled' ? 'true'
-          : name === 'prefix' ? 'mcp__'
-            : name === 'searchLimit' ? '10' : '200',
+        text: name === 'prefix' ? 'mcp__'
+          : name === 'searchLimit' ? '10' : '200',
         overridden: false,
         invalid: false,
       }
@@ -75,10 +74,8 @@ async function loadClient() {
   }
 
   const primitives = {
-    Button: 'Button',
     SettingsForm: 'SettingsForm',
     SettingsValueField: 'SettingsValueField',
-    Switch: 'Switch',
     SettingsFormModel: FakeSettingsFormModel,
   }
   const React = {
@@ -137,12 +134,11 @@ async function loadClient() {
   return { exports: exportsObject, model: capturedModel, slot, effects, dictionaries }
 }
 
-test('client registers one MCP proxy page over the four settings', async () => {
+test('client registers one MCP proxy page over the three settings', async () => {
   const { exports, model, slot, effects, dictionaries } = await loadClient()
 
   assert.deepEqual(exports.inject, ['slots', 'locale', 'configForms'])
   assert.deepEqual(model.specs.map(spec => spec.field), [
-    'enabled',
     'prefix',
     'searchLimit',
     'descriptionMaxChars',
@@ -174,7 +170,6 @@ test('client registers one MCP proxy page over the four settings', async () => {
     t: key => key,
     useMcpProxy: selector => selector({
       ...model.shell(),
-      enabled: model.field('enabled'),
       prefix: model.field('prefix'),
       searchLimit: model.field('searchLimit'),
       descriptionMaxChars: model.field('descriptionMaxChars'),
@@ -187,9 +182,8 @@ test('client registers one MCP proxy page over the four settings', async () => {
   assert.equal(tree.props.children[1].type, 'p')
   const form = tree.props.children[2]
   assert.equal(form.type, 'SettingsForm')
-  assert.equal(form.props.children.length, 4)
-  assert.equal(form.props.children[0].type, 'div')
-  assert.deepEqual(form.props.children.slice(1).map(child => child.type), [
+  assert.equal(form.props.children.length, 3)
+  assert.deepEqual(form.props.children.map(child => child.type), [
     'SettingsValueField',
     'SettingsValueField',
     'SettingsValueField',
