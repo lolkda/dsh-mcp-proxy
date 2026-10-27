@@ -130,7 +130,20 @@ test('real loader hides MCP, keeps proxy tools, and executes through mcp_call', 
   })
   assert.equal(listed.isError, false)
   assert.equal(listed.value.total, 1)
-  assert.equal(listed.value.tools[0].name, 'mcp__fake__echo')
+  assert.deepEqual(listed.value.servers, ['fake'])
+  assert.equal('tools' in listed.value, false)
+
+  const searched = await tools.execute({
+    name: 'mcp_search',
+    callId: 'search-call',
+    arguments: { query: 'echo' },
+    agent,
+    signal,
+  })
+  assert.equal(searched.isError, false)
+  assert.equal(searched.value.total, 1)
+  assert.equal(searched.value.tools[0].name, 'mcp__fake__echo')
+  assert.equal(searched.value.tools[0].description, 'Echo text back to the caller.')
 
   const described = await tools.execute({
     name: 'mcp_describe',

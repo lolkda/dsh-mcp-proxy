@@ -1,6 +1,6 @@
 # @lolkda/dsh-mcp-proxy
 
-DSH 原生模式的 MCP 代理插件：把 `mcp__*` 工具从模型的 tool list 中隐藏，改用四个轻量工具发现和调用 MCP，同时保留标准工具的原生直接调用。
+DSH 原生模式的 MCP 代理插件：把 `mcp__*` 工具从模型的 tool list 中隐藏，改用四个轻量工具完成 server 发现、工具搜索、schema 查看和调用，同时保留标准工具的原生直接调用。
 
 ## 它解决什么
 
@@ -11,7 +11,7 @@ MCP server 的工具通常以 `mcp__<server>__<tool>` 直接出现在模型 tool
 本插件不实现 Code Mode，也不改 MCP server。它只做三件事：
 
 1. 从请求投影中移除 `mcp__*` 工具和 `mcp:<server>` 提示段；
-2. 加入 `mcp_list`、`mcp_search`、`mcp_describe`、`mcp_call` 四个发现工具；
+2. 加入 `mcp_list`、`mcp_search`、`mcp_describe`、`mcp_call` 四个代理工具；
 3. 用 agent-scoped guard 阻止模型直接调用被隐藏的 `mcp__*`，只允许 `mcp_call` 的嵌套调用通过。
 
 标准工具（`read`、`bash`、`todo_write` 等）仍然是原生工具，不受影响。
@@ -31,12 +31,12 @@ MCP server 的工具通常以 `mcp__<server>__<tool>` 直接出现在模型 tool
 
 | 工具 | 参数 | 作用 |
 |---|---|---|
-| `mcp_list` | `server?` | 返回当前 Agent 可见的全部 MCP 工具、server 和截断后的描述 |
-| `mcp_search` | `query`, `server?`, `limit?` | 按名称/描述排序；默认返回 10 条，最多 50 条 |
+| `mcp_list` | 无 | 只返回当前 Agent 可见的 MCP server 名称，不返回具体工具 |
+| `mcp_search` | `query`, `server?`, `limit?` | 按名称/描述排序；返回完整描述，默认 10 条，最多 50 条 |
 | `mcp_describe` | `name` | 返回一个 MCP 工具的完整 parameters JSON Schema |
 | `mcp_call` | `name`, `arguments` | 通过 registry 执行隐藏的 MCP 工具 |
 
-`mcp_list` 按用户要求返回全部工具，没有分页或硬上限，只截断单行描述。
+`mcp_list` 只列出 server 名称，不枚举每个 server 下的工具；返回结构为 `{ total, servers: string[] }`。具体工具通过 `mcp_search` 发现，搜索结果不再截断描述。
 
 `mcp_call` 的返回是结构化的：
 
@@ -61,7 +61,6 @@ MCP server 的工具通常以 `mcp__<server>__<tool>` 直接出现在模型 tool
       config:
         prefix: 'mcp__'
         searchLimit: 10
-        descriptionMaxChars: 200
 ```
 
 安装到指定 profile：
@@ -86,7 +85,6 @@ dsh --profile <name> --dump-config | grep -A6 'mcp-proxy'
 |---|---|---|
 | `prefix` | `mcp__` | MCP 工具名前缀，同时用于识别和隐藏 |
 | `searchLimit` | `10` | `mcp_search` 默认条数，最大 50 |
-| `descriptionMaxChars` | `200` | 列表中的描述截断长度，最大 2000 |
 
 ## Web 可视化配置
 
@@ -101,10 +99,9 @@ dsh --profile <name> --dump-config | grep -A6 'mcp-proxy'
 页面出现在左侧设置导航中，使用 DSH 原生的 `SettingsForm` 和 `SettingsValueField`，提供：
 
 - `prefix` 文本；
-- `searchLimit` 数字输入，1–50；
-- `descriptionMaxChars` 数字输入，1–2000。
+- `searchLimit` 数字输入，1–50。
 
-首次加载后，后续保存配置不需要重启 DSH；三个字段都是 volatile，Loader 会原地更新运行中的配置。
+首次加载后，后续保存配置不需要重启 DSH；两个字段都是 volatile，Loader 会原地更新运行中的配置。
 
 ## 关键实现
 
@@ -113,8 +110,8 @@ dsh --profile <name> --dump-config | grep -A6 'mcp-proxy'
 - guard 规则是 `name.startsWith(options.prefix) && exec.parent === undefined`。`mcp_call` 通过 `tools.execute({ parent: exec.token })` 发起嵌套调用，所以能通过同一个 guard。
 - 装配监听使用 `prepend: true` 并在 `await next()` 之后过滤，保证最终投影由它收口。
 - 提示段是动态的：有 MCP 时非空，没有 MCP 时为空，并且会被装配过滤移除。
-- 配置字段是 volatile；插件监听 `loader/volatile-update`，原地更新 `prefix`、`searchLimit` 和 `descriptionMaxChars`。
-- 没有持久化、加载集合、journal 或 compaction hook。压缩后模型重新 `mcp_list` / `mcp_search` 即可。
+- 配置字段是 volatile；插件监听 `loader/volatile-update`，原地更新 `prefix` 和 `searchLimit`。
+- 没有持久化、加载集合、journal 或 compaction hook。压缩后模型重新 `mcp_list` 查看 server、再用 `mcp_search` 发现工具即可。
 
 ## 安全边界
 
@@ -156,6 +153,7 @@ DSH_INSTALL_ROOT=/path/to/dsh npm run test:composition
 
 - 只处理 MCP tools；resources 仍直接暴露。
 - 图片结果 v1 不做专门投影。
-- `mcp_list` 在超大 MCP 目录下可能产生很大的结果；需要分页时应改成分页接口。
+- `mcp_list` 只返回 server 名称，不提供工具数量；需要发现具体工具时使用 `mcp_search`。
+- `mcp_search` 返回完整工具描述，不再做字符截断。
 - 跳过判断在 Agent 创建时做一次；如果之后才动态加入 codemode/tool-discovery，可能同时存在两层。
 - 不修改 `tools:sdk`；PTC 会话完全跳过。

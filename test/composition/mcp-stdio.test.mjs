@@ -84,10 +84,19 @@ test('a real stdio MCP server is hidden and callable through mcp_call', async (t
     signal,
   })
   assert.equal(listed.isError, false)
-  assert.deepEqual(listed.value.tools.map((entry) => entry.name).sort(), [
-    'mcp__fake__add',
-    'mcp__fake__echo',
-  ])
+  assert.deepEqual(listed.value.servers, ['fake'])
+  assert.equal('tools' in listed.value, false)
+
+  const searched = await tools.execute({
+    name: 'mcp_search',
+    callId: 'stdio-search',
+    arguments: { query: 'echo' },
+    agent,
+    signal,
+  })
+  assert.equal(searched.isError, false)
+  assert.deepEqual(searched.value.tools.map((entry) => entry.name), ['mcp__fake__echo'])
+  assert.equal(searched.value.tools[0].description, 'Echo text back to the caller.')
 
   const called = await tools.execute({
     name: 'mcp_call',

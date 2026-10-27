@@ -134,14 +134,13 @@ async function loadClient() {
   return { exports: exportsObject, model: capturedModel, slot, effects, dictionaries }
 }
 
-test('client registers one MCP proxy page over the three settings', async () => {
+test('client registers one MCP proxy page over the two settings', async () => {
   const { exports, model, slot, effects, dictionaries } = await loadClient()
 
   assert.deepEqual(exports.inject, ['slots', 'locale', 'configForms'])
   assert.deepEqual(model.specs.map(spec => spec.field), [
     'prefix',
     'searchLimit',
-    'descriptionMaxChars',
   ])
   assert.equal(dictionaries.namespace, 'settings.mcp-proxy')
   assert.ok(dictionaries.value.zh)
@@ -172,7 +171,6 @@ test('client registers one MCP proxy page over the three settings', async () => 
       ...model.shell(),
       prefix: model.field('prefix'),
       searchLimit: model.field('searchLimit'),
-      descriptionMaxChars: model.field('descriptionMaxChars'),
     }),
     ...actions,
   })
@@ -182,9 +180,8 @@ test('client registers one MCP proxy page over the three settings', async () => 
   assert.equal(tree.props.children[1].type, 'p')
   const form = tree.props.children[2]
   assert.equal(form.type, 'SettingsForm')
-  assert.equal(form.props.children.length, 3)
+  assert.equal(form.props.children.length, 2)
   assert.deepEqual(form.props.children.map(child => child.type), [
-    'SettingsValueField',
     'SettingsValueField',
     'SettingsValueField',
   ])

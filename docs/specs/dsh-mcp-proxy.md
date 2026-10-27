@@ -4,7 +4,7 @@
 
 - 文档标识：`dsh-mcp-proxy`
 - 规格状态：已确认
-- 最后更新：2026-10-20
+- 最后更新：2026-10-27
 - 实现状态：已实现
 - 验证状态：通过
 - 关联文档：[README](../../README.md)
@@ -18,7 +18,7 @@ MCP 工具在 DSH 原生模式中以 `mcp__<server>__<tool>` 直接进入模型 
 ### 目标
 
 - 对所有 native Agent 隐藏 `mcp__*` 工具和 `mcp:<server>` 提示段。
-- 提供 `mcp_list`、`mcp_search`、`mcp_describe`、`mcp_call` 四个发现和调用工具。
+- 提供 `mcp_list`、`mcp_search`、`mcp_describe`、`mcp_call` 四个 server 发现、工具搜索、schema 查看和调用工具。
 - 保留标准工具的原生直接调用。
 - 阻止模型直接调用 `mcp__*`，只允许代理的嵌套调用。
 - 不持久化、不依赖压缩恢复、不维护已加载集合。
@@ -68,9 +68,9 @@ MCP 工具在 DSH 原生模式中以 `mcp__<server>__<tool>` 直接进入模型 
 
 - 参与者或触发方：模型调用 `mcp_list`、`mcp_search`、`mcp_describe`。
 - 前置条件与输入：Agent 有至少一个 MCP 工具。
-- 必须满足的行为：`mcp_list` 返回全部 MCP 工具；`mcp_search` 按名称和描述排序并支持 `server`、`limit`；`mcp_describe` 返回精确名称的完整 parameters。
+- 必须满足的行为：`mcp_list` 只返回当前可见的 MCP server 名称（`{total, servers}`），不返回 server 下的工具；`mcp_search` 按名称和描述排序并支持 `server`、`limit`，返回完整描述；`mcp_describe` 返回精确名称的完整 parameters。
 - 输出或状态变化：只读返回；不改变 registry 或会话状态。
-- 边界与失败行为：无匹配时返回空列表或 `found:false`；不抛出。
+- 边界与失败行为：无 server 或无匹配时返回空数组或 `found:false`；不抛出。
 
 ### R-005：代理调用
 
@@ -108,8 +108,8 @@ MCP 工具在 DSH 原生模式中以 `mcp__<server>__<tool>` 直接进入模型 
 
 - 参与者或触发方：Web 设置 → MCP 代理。
 - 前置条件与输入：Host 暴露 `mcp-proxy` 的 `Config` schema，client 注入 `configForms`、`locale`、`slots`。
-- 必须满足的行为：配置页使用 DSH 原生 `SettingsForm` 和 `SettingsValueField`；编辑 `prefix`、`searchLimit`、`descriptionMaxChars`；保存后才写入。
-- 输出或状态变化：三个字段均为 volatile；保存后原地更新运行配置。
+- 必须满足的行为：配置页使用 DSH 原生 `SettingsForm` 和 `SettingsValueField`；编辑 `prefix`、`searchLimit`；保存后才写入。
+- 输出或状态变化：两个字段均为 volatile；保存后原地更新运行配置。
 - 边界与失败行为：设置不可写时表单只读；Host 不服务 namespace 时不显示入口；保存失败保留草稿。
 
 ### 相关约束
@@ -118,7 +118,7 @@ MCP 工具在 DSH 原生模式中以 `mcp__<server>__<tool>` 直接进入模型 
 - MCP resource 工具保持可见。
 - v1 不处理图片专用投影。
 - 隐藏是请求投影，不是权限控制。
-- Web 配置页只编辑本插件的三个配置字段，不代理 MCP resources。
+- Web 配置页只编辑本插件的两个配置字段，不代理 MCP resources。
 
 ## 5. 关键决定
 
@@ -152,10 +152,10 @@ MCP 工具在 DSH 原生模式中以 `mcp__<server>__<tool>` 直接进入模型 
 ### D-004：四个工具
 
 - 状态：已确认
-- 结论：`mcp_list`、`mcp_search`、`mcp_describe`、`mcp_call`。
-- 理由：列表、检索、schema、执行职责分离。
-- 考虑过的备选：只提供 `mcp_list` + `mcp_call`。
-- 未采用原因：检索和 schema 读取会退化为模型自己读大列表。
+- 结论：`mcp_list` 只列 server，`mcp_search` 找工具并返回完整描述，`mcp_describe` 看 schema，`mcp_call` 执行。
+- 理由：server 概览、工具检索、schema、执行职责分离；不让模型一次拉取完整工具目录。
+- 考虑过的备选：`mcp_list` 返回全部工具；只提供 `mcp_search` + `mcp_call`。
+- 未采用原因：全量工具列表会放大输出和上下文；只保留搜索则缺少 server 概览。
 - 影响范围：R-004、R-005。
 
 ### D-005：MCP resource 保持可见
@@ -237,7 +237,7 @@ MCP 工具在 DSH 原生模式中以 `mcp__<server>__<tool>` 直接进入模型 
 - 对应规则：R-004
 - 前置条件：存在多个 MCP 工具。
 - 操作或输入：调用 `mcp_list`、`mcp_search`、`mcp_describe`。
-- 预期结果：列表完整排序；搜索按相关度返回并支持 limit/server；describe 返回完整 parameters。
+- 预期结果：`mcp_list` 只返回 server 名称；搜索按相关度返回完整描述并支持 limit/server；describe 返回完整 parameters。
 - 验证状态：通过
 - 验证证据：`test/unit/catalog.test.mjs`、`test/composition/real-loader.test.mjs`。
 
@@ -269,13 +269,13 @@ MCP 工具在 DSH 原生模式中以 `mcp__<server>__<tool>` 直接进入模型 
 - 是否阻塞：否。
 - 决定或验证方式：已写入 R-002 和 D-005；后续如要隐藏 resources，需单独变更。
 
-### Q-002：`mcp_list` 返回全部
+### Q-002：`mcp_list` 只返回 server 名称
 
 - 类型：暂用假设
-- 内容：按用户选择不设分页、不设硬上限；单行描述截断。
+- 内容：`mcp_list` 只列出 server 名称，不枚举工具、不提供工具数量；工具发现由 `mcp_search` 承担，搜索结果不截断描述。
 - 影响范围：R-004。
 - 是否阻塞：否。
-- 决定或验证方式：已在 README 记录；超大目录下需要改为分页接口。
+- 决定或验证方式：已写入 README；如果以后需要工具数量，应增加显式字段，而不是恢复全量工具列表。
 
 ### Q-003：PTC 真实运行时验证
 
@@ -292,9 +292,9 @@ MCP 工具在 DSH 原生模式中以 `mcp__<server>__<tool>` 直接进入模型 
 | 模块 | 职责 |
 |---|---|
 | `lib/index.js` | 插件入口、`Config` schema、按 Agent 激活、装配过滤、guard、提示段、生命周期、volatile 配置刷新 |
-| `lib/catalog.js` | 读取 MCP schema、列表、搜索、describe、名称和描述处理 |
+| `lib/catalog.js` | 读取 MCP schema、server 清单、搜索、describe、名称处理 |
 | `lib/call.js` | `mcp_call` 的嵌套 registry 调用、错误映射、内容投影 |
-| `lib/client.js` | Web 设置页：`settings.section`、三个字段、DSH 原生表单组件 |
+| `lib/client.js` | Web 设置页：`settings.section`、两个字段、DSH 原生表单组件 |
 | `cordis.patch.yml` | 顶层 profile 插入行与默认配置 |
 
 ### 8.2 激活数据流
@@ -325,7 +325,7 @@ providers + proxy section
 
 | 字段路径 | 类型 | 必填/出现条件 | 可为 null | 默认行为 | 含义与约束 |
 |---|---|---|---|---|---|
-| `mcp_list.server` | string | 可选 | 否 | 不过滤 | 按 MCP server 名过滤 |
+| `mcp_list` | object | 可选 | 否 | `{}` | 不接受参数；返回 server 名称数组 |
 | `mcp_search.query` | string | 必填 | 否 | 无 | 自然语言或名称片段 |
 | `mcp_search.server` | string | 可选 | 否 | 不过滤 | 按 server 过滤 |
 | `mcp_search.limit` | integer | 可选 | 否 | 10 | 最大 50 |
@@ -339,11 +339,10 @@ providers + proxy section
 |---|---|---|---|---|
 | `prefix` | string | `mcp__` | 非空 | 下一次隐藏、装配过滤和 guard 读取时生效 |
 | `searchLimit` | integer | `10` | 1–50 | 下一次 `mcp_search` 使用 |
-| `descriptionMaxChars` | integer | `200` | 1–2000 | 下一次 `mcp_list` / `mcp_search` 使用 |
 
 插件启用/停用由 DSH 插件管理器负责，配置页不提供 `enabled` 开关。
 
-三个字段均为 `Schema.*.volatile()`，由 DSH `SettingsForm` 暂存、保存时一次性提交；
+两个字段均为 `Schema.*.volatile()`，由 DSH `SettingsForm` 暂存、保存时一次性提交；
 插件监听 `loader/volatile-update` 原地刷新，不依赖 Agent 重建。
 
 ### 8.5 错误行为
@@ -356,7 +355,7 @@ providers + proxy section
 
 ### 8.6 验证
 
-- 单元：18 项，覆盖 catalog、`Config` schema、Web 配置客户端、激活/跳过、装配、guard、发现、调用、销毁、volatile 配置切换、首轮清空共存。
+- 单元：19 项，覆盖 catalog、`Config` schema、Web 配置客户端、激活/跳过、装配、guard、发现、调用、销毁、volatile 配置切换、首轮清空共存。
 - 组合：3 项，覆盖真实 Cordis/services、真实 registry、真实 `dsh-mcp-client` + stdio fake server、codemode 跳过。
 - 隔离 profile：`/tmp/dsh-mcp-proxy-home/profiles/verify`。
 - 组合测试使用临时 `DSH_HOME`；当前 `web` profile 通过 bundle 安装，状态不在测试断言范围内。
@@ -367,5 +366,6 @@ providers + proxy section
 - 不处理 PTC 的 `tools:sdk`。
 - 不处理 MCP resources。
 - 图片结果没有专用投影。
-- `mcp_list` 返回全部，超大 MCP 目录可能产生大结果。
+- `mcp_list` 只返回 server 名称，不提供工具数量；需要发现具体工具时使用 `mcp_search`。
+- `mcp_search` 返回完整工具描述，不再做字符截断。
 - 跳过判断只在 Agent 创建时执行一次。

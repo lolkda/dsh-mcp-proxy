@@ -6,4 +6,3 @@
       config:
         prefix: 'mcp__'
         searchLimit: 10
-        descriptionMaxChars: 200

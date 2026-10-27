@@ -254,10 +254,13 @@ test('mcp_list, mcp_search and mcp_describe read the registry without state', as
   harness.emit('agent/created', { agent: harness.agent })
   const exec = { agent: harness.agent, callId: 'call-1' }
 
+  const listTool = harness.tools.registered.get('mcp_list')
+  assert.deepEqual(listTool.parameters.properties, {})
+
   const list = await harness.tools.registered.get('mcp_list').execute({}, exec)
   assert.equal(list.total, 2)
-  assert.deepEqual(list.tools.map((row) => row.name), ['mcp__alpha__echo', 'mcp__beta__add'])
-  assert.equal(list.tools[0].server, 'alpha')
+  assert.deepEqual(list.servers, ['alpha', 'beta'])
+  assert.equal('tools' in list, false)
 
   const search = await harness.tools.registered.get('mcp_search').execute({ query: 'add' }, exec)
   assert.equal(search.total, 1)
@@ -334,7 +337,6 @@ test('volatile settings update existing agents in place', () => {
   const config = {
     prefix: 'mcp__',
     searchLimit: 10,
-    descriptionMaxChars: 200,
   }
   const harness = createHarness([mcpEcho()])
   apply(harness.top, config)

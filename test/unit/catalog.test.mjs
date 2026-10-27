@@ -4,16 +4,14 @@ import test from 'node:test'
 import {
   describeMcpTool,
   isMcpName,
-  listMcpTools,
+  listMcpServers,
   searchMcpTools,
   serverOf,
-  truncateDescription,
 } from '../../lib/catalog.js'
 import { normalizeConfig, Config } from '../../lib/index.js'
 
 const options = {
   prefix: 'mcp__',
-  descriptionMaxChars: 12,
   searchLimit: 2,
 }
 
@@ -32,16 +30,11 @@ test('name helpers recognize only the configured prefix', () => {
   assert.equal(isMcpName('read', 'mcp__'), false)
   assert.equal(serverOf('mcp__alpha__echo', 'mcp__'), 'alpha')
   assert.equal(serverOf('mcp__bad', 'mcp__'), 'unknown')
-  assert.equal(truncateDescription('abcdefghijklmnop', 5), 'abcd…')
-  assert.equal(truncateDescription('abc', 5), 'abc')
 })
 
-test('listing filters by server and truncates descriptions', () => {
-  const rows = listMcpTools(tools, {}, options, 'beta')
-  assert.deepEqual(rows.map((row) => row.name), ['mcp__beta__add', 'mcp__beta__multiply'])
-  assert.equal(rows[0].server, 'beta')
-  assert.equal(rows[0].description.length, 12)
-  assert.ok(rows[0].description.endsWith('…'))
+test('server listing returns only distinct server names', () => {
+  const servers = listMcpServers(tools, {}, options)
+  assert.deepEqual(servers, ['alpha', 'beta'])
 })
 
 test('search ranks by name and honors limit and server filter', () => {
@@ -52,10 +45,24 @@ test('search ranks by name and honors limit and server filter', () => {
   const byDescription = searchMcpTools(tools, {}, options, { query: 'numbers', server: 'beta' })
   assert.equal(byDescription.total, 2)
   assert.equal(byDescription.tools.length, 2)
+  assert.equal(byDescription.tools[0].description, 'Add two numbers.')
 
   const limited = searchMcpTools(tools, {}, options, { query: 'numbers', limit: 1 })
   assert.equal(limited.total, 2)
   assert.equal(limited.tools.length, 1)
+})
+
+test('search returns descriptions without a character limit', () => {
+  const description = `long-${'x'.repeat(2500)}`
+  const longTools = {
+    schemas: () => [
+      { name: 'mcp__alpha__long', description, parameters: { type: 'object' } },
+    ],
+  }
+
+  const result = searchMcpTools(longTools, {}, options, { query: 'long' })
+  assert.equal(result.total, 1)
+  assert.equal(result.tools[0].description, description)
 })
 
 test('describe returns the full parameter schema and a hint when missing', () => {
@@ -65,32 +72,27 @@ test('describe returns the full parameter schema and a hint when missing', () =>
 
   const missing = describeMcpTool(tools, {}, options, 'mcp__nope__x')
   assert.equal(missing.found, false)
-  assert.match(missing.hint, /mcp_list/)
+  assert.match(missing.hint, /mcp_search/)
 })
 
 test('config normalization clamps values and preserves a custom prefix', () => {
   const config = normalizeConfig({
     prefix: 'tool__',
     searchLimit: 999,
-    descriptionMaxChars: 0,
   })
   assert.equal(config.prefix, 'tool__')
   assert.equal(config.searchLimit, 50)
-  assert.equal(config.descriptionMaxChars, 200)
   assert.equal('enabled' in config, false)
 })
 
-test('the loader Config schema exposes and validates the three settings', () => {
+test('the loader Config schema exposes and validates the two settings', () => {
   const loaded = Config({})
   assert.equal(loaded.prefix.get(), 'mcp__')
   assert.equal(loaded.searchLimit.get(), 10)
-  assert.equal(loaded.descriptionMaxChars.get(), 200)
   assert.deepEqual(normalizeConfig(loaded), {
     prefix: 'mcp__',
     searchLimit: 10,
-    descriptionMaxChars: 200,
   })
   assert.throws(() => Config({ searchLimit: 51 }))
-  assert.throws(() => Config({ descriptionMaxChars: 0 }))
   assert.throws(() => Config({ prefix: '' }))
 })
